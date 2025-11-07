@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Solar Energy Monitoring System - Backend API
 
 Main API service for the Solar Energy Monitoring System with AWS IoT integration.
@@ -235,3 +236,6 @@ NODE_ENV=production npm start
 ## 📄 License
 
 ISC
+=======
+# solarenergymanagement-backend
+>>>>>>> f02ebd57d0ba91bed81eb81cd809cdfc5e47b7d0
