@@ -1,0 +1,461 @@
+// Solar Energy Monitoring System - Prisma Schema
+// Database: PostgreSQL 15+
+// ORM: Prisma 5.7+
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum UserRole {
+  ADMIN
+  PLANT_MANAGER
+  VIEWER
+}
+
+enum PlantStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+  OFFLINE
+}
+
+enum DeviceStatus {
+  ONLINE
+  OFFLINE
+  ERROR
+  MAINTENANCE
+}
+
+enum DeviceType {
+  INVERTER
+  TRANSFORMER
+  COMBINER_BOX
+  WEATHER_STATION
+  METER
+  STRING
+  MODULE
+  OTHER
+}
+
+enum DataType {
+  INTEGER
+  FLOAT
+  BOOLEAN
+  STRING
+}
+
+enum AlarmSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  INFO
+}
+
+enum AlarmStatus {
+  ACTIVE
+  ACKNOWLEDGED
+  RESOLVED
+  IGNORED
+}
+
+enum PermissionAction {
+  CREATE
+  READ
+  UPDATE
+  DELETE
+  EXECUTE
+}
+
+enum PermissionResource {
+  USERS
+  PLANTS
+  DEVICES
+  DATA
+  ALARMS
+  REPORTS
+  SETTINGS
+  AUDIT_LOGS
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  VIEW
+  EXPORT
+  ACKNOWLEDGE
+}
+
+// ============================================
+// USER MANAGEMENT
+// ============================================
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         UserRole @default(VIEWER)
+  isActive     Boolean  @default(true)
+  lastLogin    DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  plants         Plant[]
+  createdAlarms  Alarm[]        @relation("AlarmCreator")
+  acknowledgedAlarms Alarm[]    @relation("AlarmAcknowledger")
+  auditLogs      AuditLog[]
+  userHistory    UserHistory[]
+  permissions    UserPermission[]
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isSystem    Boolean  @default(false) // System roles cannot be deleted
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String             @id @default(uuid())
+  resource    PermissionResource
+  action      PermissionAction
+  description String?
+  createdAt   DateTime           @default(now())
+
+  // Relations
+  rolePermissions RolePermission[]
+  userPermissions UserPermission[]
+
+  @@unique([resource, action])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String   @id @default(uuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime @default(now())
+
+  // Relations
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserPermission {
+  id           String   @id @default(uuid())
+  userId       String
+  permissionId String
+  createdAt    DateTime @default(now())
+
+  // Relations
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permissionId])
+  @@map("user_permissions")
+}
+
+// ============================================
+// PLANT & DEVICE MANAGEMENT
+// ============================================
+
+model Plant {
+  id               String      @id @default(uuid())
+  name             String
+  location         Json // { lat: number, lng: number, address: string }
+  capacity         Float // in kW
+  status           PlantStatus @default(ACTIVE)
+  installationDate DateTime?
+  coordinates      String? // "lat,lng" for quick querying
+  timezone         String      @default("UTC")
+  metadata         Json? // Additional plant information
+
+  // AWS IoT Integration
+  iotThingName     String?     @unique
+  iotThingArn      String?
+  iotCertificateId String?
+  iotCertificateArn String?
+  iotPolicyName    String?
+  mqttTopic        String? // solar/plant/{plantId}/#
+
+  // Ownership
+  ownerId          String
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  // Relations
+  owner         User           @relation(fields: [ownerId], references: [id])
+  devices       Device[]
+  rawMqttData   RawMqttData[]
+  processedData ProcessedData[]
+  alarms        Alarm[]
+  plantHistory  PlantHistory[]
+
+  @@index([ownerId])
+  @@index([status])
+  @@index([coordinates])
+  @@map("plants")
+}
+
+model Device {
+  id              String       @id @default(uuid())
+  plantId         String
+  name            String
+  deviceType      DeviceType
+  manufacturer    String?
+  model           String?
+  serialNumber    String?      @unique
+  status          DeviceStatus @default(OFFLINE)
+  installationDate DateTime?
+  lastCommunication DateTime?
+  metadata        Json? // Additional device information
+
+  // Hierarchy support
+  parentDeviceId  String?
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Relations
+  plant          Plant           @relation(fields: [plantId], references: [id], onDelete: Cascade)
+  parentDevice   Device?         @relation("DeviceHierarchy", fields: [parentDeviceId], references: [id])
+  childDevices   Device[]        @relation("DeviceHierarchy")
+  tags           Tag[]
+  processedData  ProcessedData[]
+  alarms         Alarm[]
+  deviceHistory  DeviceHistory[]
+
+  @@index([plantId])
+  @@index([deviceType])
+  @@index([status])
+  @@index([parentDeviceId])
+  @@map("devices")
+}
+
+model Tag {
+  id          String   @id @default(uuid())
+  deviceId    String
+  name        String // e.g., "voltage_dc", "current_ac", "temperature"
+  description String?
+  unit        String? // e.g., "V", "A", "°C", "kW"
+  dataType    DataType @default(FLOAT)
+  minValue    Float?
+  maxValue    Float?
+  metadata    Json? // Additional tag configuration
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  device        Device          @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  processedData ProcessedData[]
+  alarms        Alarm[]
+
+  @@unique([deviceId, name])
+  @@index([deviceId])
+  @@map("tags")
+}
+
+// ============================================
+// DATA MANAGEMENT (with Deduplication)
+// ============================================
+
+model RawMqttData {
+  id             String   @id @default(uuid())
+  plantId        String
+  messageId      String   @unique // AWS IoT message ID (DEDUP Layer 2)
+  topic          String
+  payload        Json
+  qos            Int      @default(0)
+  receivedAt     DateTime @default(now())
+  processedAt    DateTime?
+  isProcessed    Boolean  @default(false)
+  processingError String?
+
+  // Deduplication fields
+  messageHash    String   @unique // SHA-256 hash of content (DEDUP Layer 3)
+
+  createdAt      DateTime @default(now())
+
+  // Relations
+  plant Plant @relation(fields: [plantId], references: [id], onDelete: Cascade)
+
+  @@index([plantId])
+  @@index([receivedAt])
+  @@index([isProcessed])
+  @@index([messageHash]) // For deduplication queries
+  @@map("raw_mqtt_data")
+}
+
+model ProcessedData {
+  id         String   @id @default(uuid())
+  plantId    String
+  deviceId   String
+  tagId      String
+  timestamp  DateTime
+  value      Float
+  quality    Int      @default(100) // 0-100, data quality indicator
+  flags      Json? // Additional flags or metadata
+
+  // Deduplication: Composite unique constraint
+  // Prevents duplicate data points for same device/tag/timestamp
+
+  createdAt  DateTime @default(now())
+
+  // Relations
+  plant  Plant  @relation(fields: [plantId], references: [id], onDelete: Cascade)
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([deviceId, tagId, timestamp]) // DEDUP: No duplicate measurements
+  @@index([plantId])
+  @@index([deviceId])
+  @@index([tagId])
+  @@index([timestamp])
+  @@map("processed_data")
+}
+
+// ============================================
+// ALARM MANAGEMENT
+// ============================================
+
+model Alarm {
+  id              String        @id @default(uuid())
+  plantId         String
+  deviceId        String?
+  tagId           String?
+  severity        AlarmSeverity
+  status          AlarmStatus   @default(ACTIVE)
+  message         String
+  description     String?
+  value           Float? // Value that triggered the alarm
+  threshold       Float? // Threshold that was exceeded
+
+  // Alarm lifecycle
+  triggeredAt     DateTime      @default(now())
+  acknowledgedAt  DateTime?
+  resolvedAt      DateTime?
+  acknowledgedBy  String?
+  createdBy       String
+
+  metadata        Json? // Additional alarm context
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  plant          Plant  @relation(fields: [plantId], references: [id], onDelete: Cascade)
+  device         Device? @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  tag            Tag?    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  creator        User    @relation("AlarmCreator", fields: [createdBy], references: [id])
+  acknowledger   User?   @relation("AlarmAcknowledger", fields: [acknowledgedBy], references: [id])
+
+  @@index([plantId])
+  @@index([deviceId])
+  @@index([severity])
+  @@index([status])
+  @@index([triggeredAt])
+  @@map("alarms")
+}
+
+// ============================================
+// AUDIT LOGGING
+// ============================================
+
+model AuditLog {
+  id          String      @id @default(uuid())
+  userId      String
+  action      AuditAction
+  resource    String // e.g., "Plant", "Device", "User"
+  resourceId  String? // ID of the affected resource
+  changes     Json? // Before/after snapshot
+  ipAddress   String?
+  userAgent   String?
+  timestamp   DateTime    @default(now())
+  metadata    Json? // Additional context
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@index([resource])
+  @@index([timestamp])
+  @@map("audit_logs")
+}
+
+// ============================================
+// HISTORY TABLES (for tracking changes)
+// ============================================
+
+model UserHistory {
+  id         String   @id @default(uuid())
+  userId     String
+  changes    Json // Snapshot of changes
+  changedBy  String // User ID who made the change
+  changedAt  DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([changedAt])
+  @@map("user_history")
+}
+
+model PlantHistory {
+  id        String   @id @default(uuid())
+  plantId   String
+  changes   Json // Snapshot of changes
+  changedBy String // User ID who made the change
+  changedAt DateTime @default(now())
+
+  // Relations
+  plant Plant @relation(fields: [plantId], references: [id], onDelete: Cascade)
+
+  @@index([plantId])
+  @@index([changedAt])
+  @@map("plant_history")
+}
+
+model DeviceHistory {
+  id        String   @id @default(uuid())
+  deviceId  String
+  changes   Json // Snapshot of changes
+  changedBy String // User ID who made the change
+  changedAt DateTime @default(now())
+
+  // Relations
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId])
+  @@index([changedAt])
+  @@map("device_history")
+}
