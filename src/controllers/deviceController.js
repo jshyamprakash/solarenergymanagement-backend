@@ -26,6 +26,25 @@ const createDevice = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @route   POST /api/devices/from-template
+ * @desc    Create a new device from template
+ * @access  Private (ADMIN, PLANT_MANAGER)
+ */
+const createDeviceFromTemplate = asyncHandler(async (req, res) => {
+  const device = await deviceService.createDeviceFromTemplate(
+    req.body,
+    req.user.id,
+    req.user.role
+  );
+
+  res.status(201).json({
+    success: true,
+    data: device,
+    message: 'Device created successfully from template',
+  });
+});
+
+/**
  * @route   GET /api/devices
  * @desc    Get all devices with filters and pagination
  * @access  Private
@@ -138,6 +157,7 @@ const getDeviceChildren = asyncHandler(async (req, res) => {
 
 export {
   createDevice,
+  createDeviceFromTemplate,
   getAllDevices,
   getDeviceById,
   updateDevice,

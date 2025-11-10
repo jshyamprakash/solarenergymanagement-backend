@@ -11,8 +11,8 @@
  * - 50+ alarms
  */
 
-const { PrismaClient } = require('@prisma/client');
-const bcrypt = require('bcryptjs');
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -65,9 +65,165 @@ const MOCK_USERS = [
   },
 ];
 
+// ============================================
+// DEVICE TEMPLATE DEFINITIONS
+// ============================================
+
+const DEVICE_TEMPLATES = [
+  {
+    name: 'Transformer 5MVA',
+    shortform: 'TRF',
+    deviceType: 'TRANSFORMER',
+    category: 'Power Equipment',
+    description: '5MVA Distribution Transformer',
+    manufacturer: 'ABB',
+    modelNumber: 'RESIBLOC TMR 5000',
+    ratedCapacity: 5000,
+    specifications: {
+      primaryVoltage: '33kV',
+      secondaryVoltage: '415V',
+      frequency: '50Hz',
+      coolingType: 'ONAN',
+    },
+    isSystemTemplate: true,
+    tags: [
+      { tagName: 'voltage_primary_l1', displayName: 'Primary Voltage L1', unit: 'kV', dataType: 'FLOAT', minValue: 0, maxValue: 40, displayOrder: 1, isMonitored: true },
+      { tagName: 'voltage_primary_l2', displayName: 'Primary Voltage L2', unit: 'kV', dataType: 'FLOAT', minValue: 0, maxValue: 40, displayOrder: 2, isMonitored: true },
+      { tagName: 'voltage_primary_l3', displayName: 'Primary Voltage L3', unit: 'kV', dataType: 'FLOAT', minValue: 0, maxValue: 40, displayOrder: 3, isMonitored: true },
+      { tagName: 'voltage_secondary_l1', displayName: 'Secondary Voltage L1', unit: 'V', dataType: 'FLOAT', minValue: 0, maxValue: 500, displayOrder: 4, isMonitored: true },
+      { tagName: 'voltage_secondary_l2', displayName: 'Secondary Voltage L2', unit: 'V', dataType: 'FLOAT', minValue: 0, maxValue: 500, displayOrder: 5, isMonitored: true },
+      { tagName: 'voltage_secondary_l3', displayName: 'Secondary Voltage L3', unit: 'V', dataType: 'FLOAT', minValue: 0, maxValue: 500, displayOrder: 6, isMonitored: true },
+      { tagName: 'current_primary', displayName: 'Primary Current', unit: 'A', dataType: 'FLOAT', minValue: 0, maxValue: 200, displayOrder: 7, isMonitored: true },
+      { tagName: 'current_secondary', displayName: 'Secondary Current', unit: 'A', dataType: 'FLOAT', minValue: 0, maxValue: 400, displayOrder: 8, isMonitored: true },
+      { tagName: 'load_percentage', displayName: 'Load Percentage', unit: '%', dataType: 'FLOAT', minValue: 0, maxValue: 120, displayOrder: 9, isMonitored: true },
+      { tagName: 'temperature_oil', displayName: 'Oil Temperature', unit: '°C', dataType: 'FLOAT', minValue: -20, maxValue: 120, displayOrder: 10, isMonitored: true },
+      { tagName: 'temperature_winding', displayName: 'Winding Temperature', unit: '°C', dataType: 'FLOAT', minValue: -20, maxValue: 150, displayOrder: 11, isMonitored: true },
+      { tagName: 'status', displayName: 'Operational Status', unit: '', dataType: 'INTEGER', minValue: 0, maxValue: 3, displayOrder: 12, isMonitored: true },
+    ],
+  },
+  {
+    name: 'Inverter 100kW',
+    shortform: 'INV',
+    deviceType: 'INVERTER',
+    category: 'Power Conversion',
+    description: '100kW String Inverter',
+    manufacturer: 'SMA',
+    modelNumber: 'Sunny Central 100',
+    ratedCapacity: 100,
+    specifications: {
+      maxDCVoltage: '1000V',
+      maxDCCurrent: '200A',
+      maxACPower: '100kW',
+      efficiency: '98.5%',
+    },
+    isSystemTemplate: true,
+    tags: [
+      { tagName: 'voltage_dc_input', displayName: 'DC Input Voltage', unit: 'V', dataType: 'FLOAT', minValue: 0, maxValue: 1000, displayOrder: 1, isMonitored: true },
+      { tagName: 'current_dc_input', displayName: 'DC Input Current', unit: 'A', dataType: 'FLOAT', minValue: 0, maxValue: 200, displayOrder: 2, isMonitored: true },
+      { tagName: 'power_dc_input', displayName: 'DC Input Power', unit: 'kW', dataType: 'FLOAT', minValue: 0, maxValue: 110, displayOrder: 3, isMonitored: true },
+      { tagName: 'voltage_ac_output_l1', displayName: 'AC Output Voltage L1', unit: 'V', dataType: 'FLOAT', minValue: 0, maxValue: 500, displayOrder: 4, isMonitored: true },
+      { tagName: 'voltage_ac_output_l2', displayName: 'AC Output Voltage L2', unit: 'V', dataType: 'FLOAT', minValue: 0, maxValue: 500, displayOrder: 5, isMonitored: true },
+      { tagName: 'voltage_ac_output_l3', displayName: 'AC Output Voltage L3', unit: 'V', dataType: 'FLOAT', minValue: 0, maxValue: 500, displayOrder: 6, isMonitored: true },
+      { tagName: 'current_ac_output', displayName: 'AC Output Current', unit: 'A', dataType: 'FLOAT', minValue: 0, maxValue: 200, displayOrder: 7, isMonitored: true },
+      { tagName: 'power_ac_output', displayName: 'AC Output Power', unit: 'kW', dataType: 'FLOAT', minValue: 0, maxValue: 110, displayOrder: 8, isMonitored: true },
+      { tagName: 'frequency', displayName: 'Output Frequency', unit: 'Hz', dataType: 'FLOAT', minValue: 49.5, maxValue: 50.5, displayOrder: 9, isMonitored: true },
+      { tagName: 'efficiency', displayName: 'Efficiency', unit: '%', dataType: 'FLOAT', minValue: 0, maxValue: 100, displayOrder: 10, isMonitored: true },
+      { tagName: 'temperature_internal', displayName: 'Internal Temperature', unit: '°C', dataType: 'FLOAT', minValue: -20, maxValue: 80, displayOrder: 11, isMonitored: true },
+      { tagName: 'energy_today', displayName: 'Energy Today', unit: 'kWh', dataType: 'FLOAT', minValue: 0, maxValue: 1000, displayOrder: 12, isMonitored: false },
+      { tagName: 'energy_total', displayName: 'Total Energy', unit: 'kWh', dataType: 'FLOAT', minValue: 0, maxValue: 10000000, displayOrder: 13, isMonitored: false },
+      { tagName: 'status', displayName: 'Operational Status', unit: '', dataType: 'INTEGER', minValue: 0, maxValue: 5, displayOrder: 14, isMonitored: true },
+    ],
+  },
+  {
+    name: 'AC Distribution Box 16 String',
+    shortform: 'ACDB',
+    deviceType: 'COMBINER_BOX',
+    category: 'Distribution Equipment',
+    description: 'AC Distribution Box with 16 String Inputs',
+    manufacturer: 'Schneider Electric',
+    modelNumber: 'ACDB-16S',
+    ratedCapacity: null,
+    specifications: {
+      stringInputs: 16,
+      maxCurrent: '25A per string',
+      protection: 'SPD Type 2',
+    },
+    isSystemTemplate: true,
+    tags: [
+      { tagName: 'voltage_ac', displayName: 'AC Voltage', unit: 'V', dataType: 'FLOAT', minValue: 0, maxValue: 500, displayOrder: 1, isMonitored: true },
+      { tagName: 'current_total', displayName: 'Total Current', unit: 'A', dataType: 'FLOAT', minValue: 0, maxValue: 400, displayOrder: 2, isMonitored: true },
+      { tagName: 'power_total', displayName: 'Total Power', unit: 'kW', dataType: 'FLOAT', minValue: 0, maxValue: 200, displayOrder: 3, isMonitored: true },
+      { tagName: 'current_string_1', displayName: 'String 1 Current', unit: 'A', dataType: 'FLOAT', minValue: 0, maxValue: 30, displayOrder: 4, isMonitored: true },
+      { tagName: 'current_string_2', displayName: 'String 2 Current', unit: 'A', dataType: 'FLOAT', minValue: 0, maxValue: 30, displayOrder: 5, isMonitored: true },
+      { tagName: 'temperature', displayName: 'Box Temperature', unit: '°C', dataType: 'FLOAT', minValue: -20, maxValue: 70, displayOrder: 6, isMonitored: true },
+      { tagName: 'status', displayName: 'Operational Status', unit: '', dataType: 'INTEGER', minValue: 0, maxValue: 3, displayOrder: 7, isMonitored: true },
+    ],
+  },
+  {
+    name: 'Weather Station',
+    shortform: 'WS',
+    deviceType: 'WEATHER_STATION',
+    category: 'Monitoring Equipment',
+    description: 'Meteorological Weather Station',
+    manufacturer: 'Kipp & Zonen',
+    modelNumber: 'SOLYS 2',
+    ratedCapacity: null,
+    specifications: {
+      pyranomet: 'CMP11',
+      windSensor: 'Ultrasonic',
+      tempSensor: 'PT100',
+    },
+    isSystemTemplate: true,
+    tags: [
+      { tagName: 'irradiance_ghi', displayName: 'Global Horizontal Irradiance', unit: 'W/m²', dataType: 'FLOAT', minValue: 0, maxValue: 1500, displayOrder: 1, isMonitored: true },
+      { tagName: 'irradiance_poa', displayName: 'Plane of Array Irradiance', unit: 'W/m²', dataType: 'FLOAT', minValue: 0, maxValue: 1500, displayOrder: 2, isMonitored: true },
+      { tagName: 'temperature_ambient', displayName: 'Ambient Temperature', unit: '°C', dataType: 'FLOAT', minValue: -10, maxValue: 50, displayOrder: 3, isMonitored: true },
+      { tagName: 'temperature_module', displayName: 'Module Temperature', unit: '°C', dataType: 'FLOAT', minValue: -10, maxValue: 80, displayOrder: 4, isMonitored: true },
+      { tagName: 'wind_speed', displayName: 'Wind Speed', unit: 'm/s', dataType: 'FLOAT', minValue: 0, maxValue: 30, displayOrder: 5, isMonitored: true },
+      { tagName: 'wind_direction', displayName: 'Wind Direction', unit: '°', dataType: 'FLOAT', minValue: 0, maxValue: 360, displayOrder: 6, isMonitored: false },
+      { tagName: 'humidity', displayName: 'Relative Humidity', unit: '%', dataType: 'FLOAT', minValue: 0, maxValue: 100, displayOrder: 7, isMonitored: true },
+      { tagName: 'pressure', displayName: 'Atmospheric Pressure', unit: 'hPa', dataType: 'FLOAT', minValue: 900, maxValue: 1100, displayOrder: 8, isMonitored: false },
+      { tagName: 'rainfall', displayName: 'Rainfall', unit: 'mm', dataType: 'FLOAT', minValue: 0, maxValue: 100, displayOrder: 9, isMonitored: false },
+    ],
+  },
+  {
+    name: 'Energy Meter',
+    shortform: 'MTR',
+    deviceType: 'METER',
+    category: 'Metering Equipment',
+    description: 'Three-Phase Energy Meter',
+    manufacturer: 'Schneider Electric',
+    modelNumber: 'PM5560',
+    ratedCapacity: null,
+    specifications: {
+      accuracy: 'Class 0.5S',
+      voltage: '415V',
+      current: '5A',
+    },
+    isSystemTemplate: true,
+    tags: [
+      { tagName: 'voltage_l1', displayName: 'Voltage L1', unit: 'V', dataType: 'FLOAT', minValue: 0, maxValue: 500, displayOrder: 1, isMonitored: true },
+      { tagName: 'voltage_l2', displayName: 'Voltage L2', unit: 'V', dataType: 'FLOAT', minValue: 0, maxValue: 500, displayOrder: 2, isMonitored: true },
+      { tagName: 'voltage_l3', displayName: 'Voltage L3', unit: 'V', dataType: 'FLOAT', minValue: 0, maxValue: 500, displayOrder: 3, isMonitored: true },
+      { tagName: 'current_l1', displayName: 'Current L1', unit: 'A', dataType: 'FLOAT', minValue: 0, maxValue: 1000, displayOrder: 4, isMonitored: true },
+      { tagName: 'current_l2', displayName: 'Current L2', unit: 'A', dataType: 'FLOAT', minValue: 0, maxValue: 1000, displayOrder: 5, isMonitored: true },
+      { tagName: 'current_l3', displayName: 'Current L3', unit: 'A', dataType: 'FLOAT', minValue: 0, maxValue: 1000, displayOrder: 6, isMonitored: true },
+      { tagName: 'power_active', displayName: 'Active Power', unit: 'kW', dataType: 'FLOAT', minValue: -5000, maxValue: 5000, displayOrder: 7, isMonitored: true },
+      { tagName: 'power_reactive', displayName: 'Reactive Power', unit: 'kVAR', dataType: 'FLOAT', minValue: -5000, maxValue: 5000, displayOrder: 8, isMonitored: true },
+      { tagName: 'power_apparent', displayName: 'Apparent Power', unit: 'kVA', dataType: 'FLOAT', minValue: 0, maxValue: 5000, displayOrder: 9, isMonitored: true },
+      { tagName: 'power_factor', displayName: 'Power Factor', unit: '', dataType: 'FLOAT', minValue: -1, maxValue: 1, displayOrder: 10, isMonitored: true },
+      { tagName: 'frequency', displayName: 'Frequency', unit: 'Hz', dataType: 'FLOAT', minValue: 49, maxValue: 51, displayOrder: 11, isMonitored: true },
+      { tagName: 'energy_active_import', displayName: 'Active Energy Import', unit: 'kWh', dataType: 'FLOAT', minValue: 0, maxValue: 100000000, displayOrder: 12, isMonitored: false },
+      { tagName: 'energy_active_export', displayName: 'Active Energy Export', unit: 'kWh', dataType: 'FLOAT', minValue: 0, maxValue: 100000000, displayOrder: 13, isMonitored: false },
+    ],
+  },
+];
+
 const MOCK_PLANTS = [
   {
     name: 'Rajasthan Solar Farm',
+    plantId: 'RAJASTHAN_PLANT_1',
+    mqttBaseTopic: 'solar/rajasthan/plant1',
     location: {
       lat: 26.9124,
       lng: 75.7873,
@@ -79,6 +235,8 @@ const MOCK_PLANTS = [
   },
   {
     name: 'Gujarat Solar Park',
+    plantId: 'GUJARAT_PLANT_1',
+    mqttBaseTopic: 'solar/gujarat/plant1',
     location: {
       lat: 23.0225,
       lng: 72.5714,
@@ -90,6 +248,8 @@ const MOCK_PLANTS = [
   },
   {
     name: 'Karnataka Solar Plant',
+    plantId: 'KARNATAKA_PLANT_1',
+    mqttBaseTopic: 'solar/karnataka/plant1',
     location: {
       lat: 12.9716,
       lng: 77.5946,
@@ -101,6 +261,8 @@ const MOCK_PLANTS = [
   },
   {
     name: 'Tamil Nadu Solar Station',
+    plantId: 'TAMILNADU_PLANT_1',
+    mqttBaseTopic: 'solar/tamilnadu/plant1',
     location: {
       lat: 13.0827,
       lng: 80.2707,
@@ -112,6 +274,8 @@ const MOCK_PLANTS = [
   },
   {
     name: 'Maharashtra Solar Facility',
+    plantId: 'MAHARASHTRA_PLANT_1',
+    mqttBaseTopic: 'solar/maharashtra/plant1',
     location: {
       lat: 19.0760,
       lng: 72.8777,
@@ -194,7 +358,33 @@ async function seedUsers() {
   return users;
 }
 
-async function seedPlants(ownerId) {
+async function seedDeviceTemplates() {
+  console.log('🔧 Seeding device templates...');
+
+  const templates = [];
+  for (const templateData of DEVICE_TEMPLATES) {
+    const { tags, ...templateFields } = templateData;
+
+    const template = await prisma.deviceTemplate.create({
+      data: {
+        ...templateFields,
+        tags: {
+          create: tags,
+        },
+      },
+      include: {
+        tags: true,
+      },
+    });
+
+    templates.push(template);
+    console.log(`  ✓ Created template: ${template.shortform} - ${template.name} (${template.tags.length} tags)`);
+  }
+
+  return templates;
+}
+
+async function seedPlants(createdById) {
   console.log('🏭 Seeding plants...');
 
   const plants = [];
@@ -202,6 +392,8 @@ async function seedPlants(ownerId) {
     const coordinates = `${plantData.location.lat},${plantData.location.lng}`;
     const plant = await prisma.plant.create({
       data: {
+        plantId: plantData.plantId,
+        mqttBaseTopic: plantData.mqttBaseTopic,
         name: plantData.name,
         location: plantData.location,
         capacity: plantData.capacity,
@@ -209,17 +401,68 @@ async function seedPlants(ownerId) {
         coordinates,
         timezone: plantData.timezone,
         installationDate: getDateMinusDays(Math.random() * 365 * 2), // Random date within 2 years
-        ownerId,
+        createdById,
         // IoT fields will be populated when AWS IoT is configured
         iotThingName: `solar-plant-${plantData.name.toLowerCase().replace(/\s+/g, '-')}`,
-        mqttTopic: `solar/plant/${plantData.name.toLowerCase().replace(/\s+/g, '-')}`,
       },
     });
     plants.push(plant);
-    console.log(`  ✓ Created plant: ${plant.name} (${plant.capacity / 1000} MW)`);
+    console.log(`  ✓ Created plant: ${plant.plantId} - ${plant.name} (${plant.capacity / 1000} MW)`);
   }
 
   return plants;
+}
+
+async function seedUserPlantMappings(users, plants) {
+  console.log('🔗 Seeding user-plant mappings...');
+
+  const adminUser = users.find(u => u.role === 'ADMIN');
+  const managerUser = users.find(u => u.role === 'PLANT_MANAGER');
+  const viewerUser = users.find(u => u.role === 'VIEWER');
+
+  let mappingCount = 0;
+
+  // Admin gets access to all plants
+  for (const plant of plants) {
+    await prisma.userPlantMap.create({
+      data: {
+        userId: adminUser.id,
+        plantId: plant.id,
+      },
+    });
+    mappingCount++;
+  }
+  console.log(`  ✓ Assigned all ${plants.length} plants to Admin`);
+
+  // Manager gets access to first 3 plants
+  const managerPlants = plants.slice(0, 3);
+  for (const plant of managerPlants) {
+    await prisma.userPlantMap.create({
+      data: {
+        userId: managerUser.id,
+        plantId: plant.id,
+      },
+    });
+    mappingCount++;
+  }
+  console.log(`  ✓ Assigned ${managerPlants.length} plants to Plant Manager`);
+
+  // Viewer gets access to first 2 plants
+  const viewerPlants = plants.slice(0, 2);
+  for (const plant of viewerPlants) {
+    await prisma.userPlantMap.create({
+      data: {
+        userId: viewerUser.id,
+        plantId: plant.id,
+      },
+    });
+    mappingCount++;
+  }
+  console.log(`  ✓ Assigned ${viewerPlants.length} plants to Viewer`);
+
+  console.log(`  ✓ Total mappings created: ${mappingCount}`);
+
+  return mappingCount;
 }
 
 async function seedDevicesAndTags(plants) {
@@ -409,28 +652,29 @@ async function seedAlarms(plants, devices, tags, userId) {
   return alarms;
 }
 
-async function seedAuditLogs(userId) {
-  console.log('📋 Seeding audit logs...');
-
-  const actions = ['CREATE', 'UPDATE', 'DELETE', 'VIEW', 'LOGIN', 'LOGOUT'];
-  const resources = ['Plant', 'Device', 'User', 'Alarm', 'Report'];
-
-  for (let i = 0; i < 30; i++) {
-    await prisma.auditLog.create({
-      data: {
-        userId,
-        action: actions[Math.floor(Math.random() * actions.length)],
-        resource: resources[Math.floor(Math.random() * resources.length)],
-        resourceId: Math.random().toString(36).substring(7),
-        timestamp: getDateMinusHours(Math.random() * 168),
-        ipAddress: `192.168.1.${Math.floor(Math.random() * 255)}`,
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-      },
-    });
-  }
-
-  console.log(`  ✓ Created 30 audit log entries`);
-}
+// AUDIT LOG - COMMENTED OUT (Enable when needed)
+// async function seedAuditLogs(userId) {
+//   console.log('📋 Seeding audit logs...');
+//
+//   const actions = ['CREATE', 'UPDATE', 'DELETE', 'VIEW', 'LOGIN', 'LOGOUT'];
+//   const resources = ['Plant', 'Device', 'User', 'Alarm', 'Report'];
+//
+//   for (let i = 0; i < 30; i++) {
+//     await prisma.auditLog.create({
+//       data: {
+//         userId,
+//         action: actions[Math.floor(Math.random() * actions.length)],
+//         resource: resources[Math.floor(Math.random() * resources.length)],
+//         resourceId: Math.random().toString(36).substring(7),
+//         timestamp: getDateMinusHours(Math.random() * 168),
+//         ipAddress: `192.168.1.${Math.floor(Math.random() * 255)}`,
+//         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+//       },
+//     });
+//   }
+//
+//   console.log(`  ✓ Created 30 audit log entries`);
+// }
 
 // ============================================
 // MAIN SEED FUNCTION
@@ -450,16 +694,16 @@ async function main() {
     await prisma.rawMqttData.deleteMany();
     await prisma.alarm.deleteMany();
     await prisma.tag.deleteMany();
+    await prisma.deviceHierarchyHistory.deleteMany();
     await prisma.device.deleteMany();
+    await prisma.deviceSequence.deleteMany();
+    await prisma.userPlantMap.deleteMany();
     await prisma.plant.deleteMany();
+    await prisma.deviceTemplateTag.deleteMany();
+    await prisma.hierarchyRule.deleteMany();
+    await prisma.deviceTemplate.deleteMany();
     await prisma.auditLog.deleteMany();
     await prisma.userHistory.deleteMany();
-    await prisma.plantHistory.deleteMany();
-    await prisma.deviceHistory.deleteMany();
-    await prisma.userPermission.deleteMany();
-    await prisma.rolePermission.deleteMany();
-    await prisma.permission.deleteMany();
-    await prisma.role.deleteMany();
     await prisma.user.deleteMany();
     console.log('  ✓ Cleared all existing data');
     console.log('');
@@ -468,8 +712,14 @@ async function main() {
     const users = await seedUsers();
     console.log('');
 
+    const templates = await seedDeviceTemplates();
+    console.log('');
+
     const adminUser = users.find(u => u.role === 'ADMIN');
     const plants = await seedPlants(adminUser.id);
+    console.log('');
+
+    const mappingCount = await seedUserPlantMappings(users, plants);
     console.log('');
 
     const { devices, tags } = await seedDevicesAndTags(plants);
@@ -481,8 +731,9 @@ async function main() {
     await seedAlarms(plants, devices, tags, adminUser.id);
     console.log('');
 
-    await seedAuditLogs(adminUser.id);
-    console.log('');
+    // AUDIT LOG - COMMENTED OUT (Enable when needed)
+    // await seedAuditLogs(adminUser.id);
+    // console.log('');
 
     // Summary
     console.log('='.repeat(60));
@@ -491,11 +742,13 @@ async function main() {
     console.log('');
     console.log('📊 Summary:');
     console.log(`   Users: ${users.length}`);
+    console.log(`   Device Templates: ${templates.length}`);
     console.log(`   Plants: ${plants.length}`);
+    console.log(`   User-Plant Mappings: ${mappingCount}`);
     console.log(`   Devices: ${devices.length}`);
     console.log(`   Tags: ${tags.length}`);
     console.log(`   Alarms: 50`);
-    console.log(`   Audit Logs: 30`);
+    // console.log(`   Audit Logs: 30`); // AUDIT LOG - COMMENTED OUT
     console.log('');
     console.log('🔐 Login Credentials:');
     console.log('');

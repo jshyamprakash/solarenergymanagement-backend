@@ -103,7 +103,7 @@ enum AuditAction {
 // ============================================
 
 model User {
-  id           String   @id @default(uuid())
+  id           Int      @id @default(autoincrement())
   email        String   @unique
   passwordHash String
   name         String
@@ -114,73 +114,34 @@ model User {
   updatedAt    DateTime @updatedAt
 
   // Relations
-  plants         Plant[]
-  createdAlarms  Alarm[]        @relation("AlarmCreator")
-  acknowledgedAlarms Alarm[]    @relation("AlarmAcknowledger")
+  createdPlants  Plant[]          @relation("PlantCreator")
+  plantMaps      UserPlantMap[]
+  createdAlarms  Alarm[]          @relation("AlarmCreator")
+  acknowledgedAlarms Alarm[]      @relation("AlarmAcknowledger")
   auditLogs      AuditLog[]
   userHistory    UserHistory[]
-  permissions    UserPermission[]
 
   @@index([email])
   @@index([role])
   @@map("users")
 }
 
-model Role {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  description String?
-  isSystem    Boolean  @default(false) // System roles cannot be deleted
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+// User-Plant Mapping Table (for access control)
+model UserPlantMap {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  plantId   Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  permissions RolePermission[]
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plant Plant @relation(fields: [plantId], references: [id], onDelete: Cascade)
 
-  @@map("roles")
-}
-
-model Permission {
-  id          String             @id @default(uuid())
-  resource    PermissionResource
-  action      PermissionAction
-  description String?
-  createdAt   DateTime           @default(now())
-
-  // Relations
-  rolePermissions RolePermission[]
-  userPermissions UserPermission[]
-
-  @@unique([resource, action])
-  @@map("permissions")
-}
-
-model RolePermission {
-  id           String   @id @default(uuid())
-  roleId       String
-  permissionId String
-  createdAt    DateTime @default(now())
-
-  // Relations
-  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-
-  @@unique([roleId, permissionId])
-  @@map("role_permissions")
-}
-
-model UserPermission {
-  id           String   @id @default(uuid())
-  userId       String
-  permissionId String
-  createdAt    DateTime @default(now())
-
-  // Relations
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, permissionId])
-  @@map("user_permissions")
+  @@unique([userId, plantId]) // Prevent duplicate assignments
+  @@index([userId])
+  @@index([plantId])
+  @@map("user_plant_map")
 }
 
 // ============================================
@@ -188,7 +149,12 @@ model UserPermission {
 // ============================================
 
 model Plant {
-  id               String      @id @default(uuid())
+  id               Int         @id @default(autoincrement())
+
+  // User-defined identifiers (NEW)
+  plantId          String?     @unique // User-defined unique ID (e.g., RAJASTHAN_PLANT_1) - nullable for migration
+  mqttBaseTopic    String? // User-defined MQTT base topic (e.g., solar/rajasthan/plant1) - nullable for migration
+
   name             String
   location         Json // { lat: number, lng: number, address: string }
   capacity         Float // in kW
@@ -204,30 +170,39 @@ model Plant {
   iotCertificateId String?
   iotCertificateArn String?
   iotPolicyName    String?
-  mqttTopic        String? // solar/plant/{plantId}/#
 
-  // Ownership
-  ownerId          String
+  // Creator (for audit trail)
+  createdById      Int
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
 
   // Relations
-  owner         User           @relation(fields: [ownerId], references: [id])
+  createdBy     User              @relation("PlantCreator", fields: [createdById], references: [id])
+  userMaps      UserPlantMap[]
   devices       Device[]
   rawMqttData   RawMqttData[]
   processedData ProcessedData[]
   alarms        Alarm[]
-  plantHistory  PlantHistory[]
+  deviceSequences DeviceSequence[]
 
-  @@index([ownerId])
+  @@index([plantId])
+  @@index([createdById])
   @@index([status])
   @@index([coordinates])
   @@map("plants")
 }
 
 model Device {
-  id              String       @id @default(uuid())
-  plantId         String
+  id              Int          @id @default(autoincrement())
+
+  // Template reference (NEW)
+  templateId      Int?
+
+  // Auto-generated identifiers (NEW)
+  deviceId        String? // Auto-generated: {shortform}_{sequence} (e.g., TRF_1, INV_1) - nullable for migration - unique per plant via @@unique below
+  mqttTopic       String? // Auto-generated: {plant.mqttBaseTopic}/{deviceId}
+
+  plantId         Int
   name            String
   deviceType      DeviceType
   manufacturer    String?
@@ -239,30 +214,43 @@ model Device {
   metadata        Json? // Additional device information
 
   // Hierarchy support
-  parentDeviceId  String?
+  parentDeviceId  Int?
+  hierarchyVersion Int         @default(1) // Track hierarchy changes
+  hierarchyEffectiveDate DateTime @default(now())
+
+  // Lock mechanism (NEW)
+  isLocked        Boolean      @default(false) // Prevent changes once data exists
+  lockedAt        DateTime?
 
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
   // Relations
+  template       DeviceTemplate? @relation(fields: [templateId], references: [id])
   plant          Plant           @relation(fields: [plantId], references: [id], onDelete: Cascade)
   parentDevice   Device?         @relation("DeviceHierarchy", fields: [parentDeviceId], references: [id])
   childDevices   Device[]        @relation("DeviceHierarchy")
   tags           Tag[]
   processedData  ProcessedData[]
   alarms         Alarm[]
-  deviceHistory  DeviceHistory[]
+  hierarchyHistory DeviceHierarchyHistory[]
 
+  @@unique([plantId, deviceId]) // Unique device ID within plant
   @@index([plantId])
   @@index([deviceType])
   @@index([status])
   @@index([parentDeviceId])
+  @@index([templateId])
   @@map("devices")
 }
 
 model Tag {
-  id          String   @id @default(uuid())
-  deviceId    String
+  id          Int      @id @default(autoincrement())
+  deviceId    Int
+
+  // Template tag reference (NEW)
+  templateTagId Int? // Link to DeviceTemplateTag
+
   name        String // e.g., "voltage_dc", "current_ac", "temperature"
   description String?
   unit        String? // e.g., "V", "A", "°C", "kW"
@@ -274,13 +262,134 @@ model Tag {
   updatedAt   DateTime @updatedAt
 
   // Relations
+  templateTag   DeviceTemplateTag? @relation(fields: [templateTagId], references: [id])
   device        Device          @relation(fields: [deviceId], references: [id], onDelete: Cascade)
   processedData ProcessedData[]
   alarms        Alarm[]
 
   @@unique([deviceId, name])
   @@index([deviceId])
+  @@index([templateTagId])
   @@map("tags")
+}
+
+// ============================================
+// DEVICE TEMPLATE SYSTEM (NEW)
+// ============================================
+
+model DeviceTemplate {
+  id               Int          @id @default(autoincrement())
+
+  // Template identification
+  name             String // e.g., "Transformer 5MVA"
+  shortform        String       @unique // User-defined (e.g., "TRF", "INV") - used as device ID prefix
+  deviceType       DeviceType
+  category         String? // e.g., "Power Equipment", "Monitoring"
+  description      String?
+
+  // Manufacturer specifications
+  manufacturer     String?
+  modelNumber      String?
+  ratedCapacity    Float? // in kW or kVA
+  specifications   Json? // Technical specs
+
+  // Template metadata
+  isActive         Boolean      @default(true)
+  isSystemTemplate Boolean      @default(false) // System templates cannot be deleted
+  createdBy        String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  // Relations
+  tags             DeviceTemplateTag[]
+  devices          Device[]
+  parentRules      HierarchyRule[]     @relation("ParentRules")
+  childRules       HierarchyRule[]     @relation("ChildRules")
+  deviceSequences  DeviceSequence[]
+
+  @@index([deviceType])
+  @@index([shortform])
+  @@index([isActive])
+  @@map("device_templates")
+}
+
+model DeviceTemplateTag {
+  id             Int            @id @default(autoincrement())
+  templateId     Int
+  tagName        String // e.g., "voltage_ac_l1"
+  displayName    String // e.g., "AC Voltage L1"
+  description    String?
+  unit           String? // e.g., "V", "A", "kW"
+  dataType       DataType       @default(FLOAT)
+  minValue       Float?
+  maxValue       Float?
+  defaultValue   Float?
+  isRequired     Boolean        @default(true)
+  isMonitored    Boolean        @default(true) // Generate alarms?
+  metadata       Json?
+  displayOrder   Int            @default(0)
+  createdAt      DateTime       @default(now())
+
+  // Relations
+  template       DeviceTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  tags           Tag[]
+
+  @@unique([templateId, tagName])
+  @@index([templateId])
+  @@map("device_template_tags")
+}
+
+model HierarchyRule {
+  id                  Int            @id @default(autoincrement())
+  parentTemplateId    Int? // NULL = can be root device
+  childTemplateId     Int
+  isAllowed           Boolean        @default(true)
+  description         String? // e.g., "Inverters connect to Transformers"
+  createdAt           DateTime       @default(now())
+
+  // Relations
+  parentTemplate      DeviceTemplate? @relation("ParentRules", fields: [parentTemplateId], references: [id], onDelete: Cascade)
+  childTemplate       DeviceTemplate  @relation("ChildRules", fields: [childTemplateId], references: [id], onDelete: Cascade)
+
+  @@unique([parentTemplateId, childTemplateId])
+  @@map("hierarchy_rules")
+}
+
+model DeviceSequence {
+  id             Int      @id @default(autoincrement())
+  plantId        Int
+  templateId     Int
+  shortform      String // e.g., "TRF", "INV"
+  lastSequence   Int      @default(0) // Last used sequence number
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  plant    Plant          @relation(fields: [plantId], references: [id], onDelete: Cascade)
+  template DeviceTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([plantId, templateId])
+  @@index([plantId, shortform])
+  @@map("device_sequences")
+}
+
+model DeviceHierarchyHistory {
+  id                 Int      @id @default(autoincrement())
+  deviceId           Int
+  parentDeviceId     Int? // Parent at this point in time
+  hierarchyVersion   Int
+  effectiveFrom      DateTime
+  effectiveTo        DateTime? // NULL = current version
+  changedBy          Int // User ID who made the change
+  reason             String? // Optional change reason
+  createdAt          DateTime @default(now())
+
+  // Relations
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, effectiveFrom])
+  @@index([effectiveFrom, effectiveTo])
+  @@map("device_hierarchy_history")
 }
 
 // ============================================
@@ -288,8 +397,8 @@ model Tag {
 // ============================================
 
 model RawMqttData {
-  id             String   @id @default(uuid())
-  plantId        String
+  id             Int      @id @default(autoincrement())
+  plantId        Int
   messageId      String   @unique // AWS IoT message ID (DEDUP Layer 2)
   topic          String
   payload        Json
@@ -315,10 +424,10 @@ model RawMqttData {
 }
 
 model ProcessedData {
-  id         String   @id @default(uuid())
-  plantId    String
-  deviceId   String
-  tagId      String
+  id         Int      @id @default(autoincrement())
+  plantId    Int
+  deviceId   Int
+  tagId      Int
   timestamp  DateTime
   value      Float
   quality    Int      @default(100) // 0-100, data quality indicator
@@ -347,10 +456,10 @@ model ProcessedData {
 // ============================================
 
 model Alarm {
-  id              String        @id @default(uuid())
-  plantId         String
-  deviceId        String?
-  tagId           String?
+  id              Int           @id @default(autoincrement())
+  plantId         Int
+  deviceId        Int?
+  tagId           Int?
   severity        AlarmSeverity
   status          AlarmStatus   @default(ACTIVE)
   message         String
@@ -362,8 +471,8 @@ model Alarm {
   triggeredAt     DateTime      @default(now())
   acknowledgedAt  DateTime?
   resolvedAt      DateTime?
-  acknowledgedBy  String?
-  createdBy       String
+  acknowledgedBy  Int?
+  createdBy       Int
 
   metadata        Json? // Additional alarm context
 
@@ -390,8 +499,8 @@ model Alarm {
 // ============================================
 
 model AuditLog {
-  id          String      @id @default(uuid())
-  userId      String
+  id          Int         @id @default(autoincrement())
+  userId      Int
   action      AuditAction
   resource    String // e.g., "Plant", "Device", "User"
   resourceId  String? // ID of the affected resource
@@ -416,10 +525,10 @@ model AuditLog {
 // ============================================
 
 model UserHistory {
-  id         String   @id @default(uuid())
-  userId     String
+  id         Int      @id @default(autoincrement())
+  userId     Int
   changes    Json // Snapshot of changes
-  changedBy  String // User ID who made the change
+  changedBy  Int // User ID who made the change
   changedAt  DateTime @default(now())
 
   // Relations
@@ -428,34 +537,4 @@ model UserHistory {
   @@index([userId])
   @@index([changedAt])
   @@map("user_history")
-}
-
-model PlantHistory {
-  id        String   @id @default(uuid())
-  plantId   String
-  changes   Json // Snapshot of changes
-  changedBy String // User ID who made the change
-  changedAt DateTime @default(now())
-
-  // Relations
-  plant Plant @relation(fields: [plantId], references: [id], onDelete: Cascade)
-
-  @@index([plantId])
-  @@index([changedAt])
-  @@map("plant_history")
-}
-
-model DeviceHistory {
-  id        String   @id @default(uuid())
-  deviceId  String
-  changes   Json // Snapshot of changes
-  changedBy String // User ID who made the change
-  changedAt DateTime @default(now())
-
-  // Relations
-  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-
-  @@index([deviceId])
-  @@index([changedAt])
-  @@map("device_history")
 }

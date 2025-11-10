@@ -134,8 +134,30 @@ const getDeviceChildrenSchema = {
   }),
 };
 
+/**
+ * Create device from template validation schema
+ */
+const createDeviceFromTemplateSchema = {
+  body: z.object({
+    plantId: z.string().uuid('Invalid plant ID'),
+    templateId: z.string().uuid('Invalid template ID'),
+    name: z.string().min(2).max(100).optional(),
+    deviceCode: z.string().optional(),
+    parentDeviceId: z.string().uuid().optional().nullable(),
+    selectedTags: z.array(z.string().uuid()).optional(),
+    manufacturer: z.string().optional(),
+    model: z.string().optional(),
+    description: z.string().optional(),
+    serialNumber: z.string().optional(),
+    status: z.enum(['ONLINE', 'OFFLINE', 'ERROR', 'MAINTENANCE']).optional(),
+    installationDate: z.string().datetime().optional(),
+    metadata: z.record(z.any()).optional(),
+  }),
+};
+
 export {
   createDeviceSchema,
+  createDeviceFromTemplateSchema,
   updateDeviceSchema,
   getDeviceSchema,
   deleteDeviceSchema,

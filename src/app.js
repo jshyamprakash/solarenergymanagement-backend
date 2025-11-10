@@ -10,12 +10,18 @@ import morgan from 'morgan';
 import config from './config/index.js';
 import logger from './config/logger.js';
 import authRoutes from './routes/auth.js';
+import userRoutes from './routes/users.js';
 import plantRoutes from './routes/plants.js';
 import deviceRoutes from './routes/devices.js';
+import templateRoutes from './routes/templates.js';
 import alarmRoutes from './routes/alarms.js';
 import hierarchyRoutes from './routes/hierarchy.js';
 import tagRoutes from './routes/tags.js';
 import dataRoutes from './routes/data.js';
+// AUDIT LOG - COMMENTED OUT (Enable when needed)
+// import auditRoutes from './routes/audit.js';
+import reportRoutes from './routes/reports.js';
+import userPlantMapRoutes from './routes/userPlantMapRoutes.js';
 import errorHandler from './middlewares/errorHandler.js';
 
 const app = express();
@@ -76,12 +82,18 @@ app.get('/', (req, res) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/plants', plantRoutes);
 app.use('/api/devices', deviceRoutes);
+app.use('/api/templates', templateRoutes);
 app.use('/api/alarms', alarmRoutes);
 app.use('/api/hierarchy', hierarchyRoutes);
 app.use('/api/tags', tagRoutes);
 app.use('/api/data', dataRoutes);
+// AUDIT LOG - COMMENTED OUT (Enable when needed)
+// app.use('/api/audit', auditRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/user-plant-map', userPlantMapRoutes);
 
 // ============================================
 // ERROR HANDLING

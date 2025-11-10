@@ -40,7 +40,8 @@ const getAllPlants = asyncHandler(async (req, res) => {
  * @access  Private
  */
 const getPlantById = asyncHandler(async (req, res) => {
-  const plant = await plantService.getPlantById(req.params.id, req.user.id, req.user.role);
+  const includeDevices = req.query.includeDevices === 'true';
+  const plant = await plantService.getPlantById(req.params.id, req.user.id, req.user.role, includeDevices);
 
   res.status(200).json({
     status: 'success',

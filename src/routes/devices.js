@@ -10,6 +10,7 @@ import { protect, restrictTo } from '../middlewares/auth.js';
 import validate from '../middlewares/validate.js';
 import {
   createDeviceSchema,
+  createDeviceFromTemplateSchema,
   updateDeviceSchema,
   getDeviceSchema,
   deleteDeviceSchema,
@@ -44,6 +45,18 @@ router.get(
   '/:id/children',
   validate(getDeviceChildrenSchema),
   deviceController.getDeviceChildren
+);
+
+/**
+ * @route   POST /api/devices/from-template
+ * @desc    Create a new device from template
+ * @access  Private (ADMIN, PLANT_MANAGER)
+ */
+router.post(
+  '/from-template',
+  restrictTo('ADMIN', 'PLANT_MANAGER'),
+  validate(createDeviceFromTemplateSchema),
+  deviceController.createDeviceFromTemplate
 );
 
 /**

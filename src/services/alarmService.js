@@ -5,6 +5,8 @@
 
 import { PrismaClient } from '@prisma/client';
 import { NotFoundError, ForbiddenError, BadRequestError } from '../utils/errors.js';
+// AUDIT LOG - COMMENTED OUT (Enable when needed)
+// import { logAuditEntry } from './auditService.js';
 
 const prisma = new PrismaClient();
 
@@ -250,6 +252,26 @@ const createAlarm = async (alarmData, createdBy) => {
     },
   });
 
+  // Log to audit
+  await logAuditEntry({
+    entityType: 'Alarm',
+    entityId: alarm.id,
+    action: 'CREATE',
+    userId: createdBy,
+    changesBefore: null,
+    changesAfter: {
+      plantId: alarm.plantId,
+      deviceId: alarm.deviceId,
+      tagId: alarm.tagId,
+      severity: alarm.severity,
+      status: alarm.status,
+      message: alarm.message,
+      description: alarm.description,
+      value: alarm.value,
+      threshold: alarm.threshold,
+    },
+  });
+
   return alarm;
 };
 
@@ -293,6 +315,27 @@ const acknowledgeAlarm = async (alarmId, userId, userRole, acknowledgeData = {})
     },
   });
 
+  // Log to audit
+  await logAuditEntry({
+    entityType: 'Alarm',
+    entityId: alarmId,
+    action: 'ACKNOWLEDGE',
+    userId,
+    changesBefore: {
+      status: alarm.status,
+      acknowledgedAt: alarm.acknowledgedAt,
+      acknowledgedBy: alarm.acknowledgedBy,
+    },
+    changesAfter: {
+      status: 'ACKNOWLEDGED',
+      acknowledgedAt: updatedAlarm.acknowledgedAt,
+      acknowledgedBy: userId,
+    },
+    metadata: {
+      note: acknowledgeData.note,
+    },
+  });
+
   return updatedAlarm;
 };
 
@@ -326,6 +369,26 @@ const resolveAlarm = async (alarmId, userId, userRole, resolveData = {}) => {
       device: {
         select: { id: true, name: true },
       },
+    },
+  });
+
+  // Log to audit
+  await logAuditEntry({
+    entityType: 'Alarm',
+    entityId: alarmId,
+    action: 'UPDATE',
+    userId,
+    changesBefore: {
+      status: alarm.status,
+      resolvedAt: alarm.resolvedAt,
+    },
+    changesAfter: {
+      status: 'RESOLVED',
+      resolvedAt: updatedAlarm.resolvedAt,
+    },
+    metadata: {
+      action: 'resolve',
+      note: resolveData.note,
     },
   });
 

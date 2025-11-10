@@ -15,6 +15,18 @@ const locationSchema = z.object({
 });
 
 /**
+ * Device schema for plant creation/update
+ */
+const deviceSchema = z.object({
+  templateId: z.string().uuid('Invalid template ID'),
+  name: z.string().min(1, 'Device name is required'),
+  parentDeviceId: z.union([z.string(), z.number(), z.null()]).optional(), // Can be 'PLANT', device index (string or number), or null
+  serialNumber: z.string().optional(),
+  status: z.enum(['ONLINE', 'OFFLINE', 'ERROR', 'MAINTENANCE']).optional(),
+  selectedTags: z.array(z.string().uuid()).optional(),
+});
+
+/**
  * Create plant validation schema
  */
 const createPlantSchema = {
@@ -25,6 +37,16 @@ const createPlantSchema = {
       })
       .min(3, 'Plant name must be at least 3 characters')
       .max(100, 'Plant name must not exceed 100 characters'),
+    plantId: z
+      .string({
+        required_error: 'Plant ID is required',
+      })
+      .regex(/^[A-Z0-9_-]{3,20}$/, 'Plant ID must be 3-20 characters (uppercase letters, numbers, underscores, hyphens only)'),
+    mqttBaseTopic: z
+      .string({
+        required_error: 'MQTT Base Topic is required',
+      })
+      .min(1, 'MQTT Base Topic cannot be empty'),
     location: locationSchema,
     capacity: z
       .number({
@@ -35,6 +57,7 @@ const createPlantSchema = {
     installationDate: z.string().datetime().optional(),
     timezone: z.string().optional().default('UTC'),
     metadata: z.record(z.any()).optional(),
+    devices: z.array(deviceSchema).optional().default([]),
   }),
 };
 
@@ -57,6 +80,7 @@ const updatePlantSchema = {
     installationDate: z.string().datetime().optional(),
     timezone: z.string().optional(),
     metadata: z.record(z.any()).optional(),
+    devices: z.array(deviceSchema).optional(),
   }),
 };
 
