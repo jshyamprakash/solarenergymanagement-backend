@@ -240,7 +240,7 @@ const createPlant = async (plantData, userId) => {
           },
         },
         include: {
-          owner: {
+          createdBy: {
             select: {
               id: true,
               name: true,
@@ -364,70 +364,82 @@ const getAllPlants = async (filters = {}, userId, userRole) => {
  * Get plant by ID
  */
 const getPlantById = async (plantId, userId, userRole, includeDevices = false) => {
-  const plant = await prisma.plant.findUnique({
-    where: { id: plantId },
-    include: {
-      createdBy: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
+  console.log('getPlantById called with includeDevices:', includeDevices);
+  console.log('getPlantById called with plantId:', plantId, 'type:', typeof plantId);
+
+  const includeClause = {
+    createdBy: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
       },
-      userMaps: {
-        select: {
-          userId: true,
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              role: true,
-            },
-          },
-        },
-      },
-      _count: {
-        select: {
-          devices: true,
-          alarms: true,
-        },
-      },
-      ...(includeDevices && {
-        devices: {
-          include: {
-            template: {
-              select: {
-                id: true,
-                name: true,
-                deviceType: true,
-                shortform: true,
-              },
-            },
-            parentDevice: {
-              select: {
-                id: true,
-                name: true,
-                deviceId: true,
-              },
-            },
-            tags: {
-              include: {
-                templateTag: {
-                  select: {
-                    id: true,
-                    tagName: true,
-                    displayName: true,
-                    description: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      }),
     },
+    userMaps: {
+      select: {
+        userId: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    },
+    _count: {
+      select: {
+        devices: true,
+        alarms: true,
+      },
+    },
+  };
+
+  if (includeDevices) {
+    console.log('Including devices in query');
+    includeClause.devices = {
+      include: {
+        template: {
+          select: {
+            id: true,
+            name: true,
+            deviceType: true,
+            shortform: true,
+          },
+        },
+        parentDevice: {
+          select: {
+            id: true,
+            name: true,
+            deviceId: true,
+          },
+        },
+        tags: {
+          include: {
+            templateTag: {
+              select: {
+                id: true,
+                tagName: true,
+                displayName: true,
+                description: true,
+              },
+            },
+          },
+        },
+      },
+    };
+  }
+
+  // Convert plantId to integer if it's a string
+  const id = typeof plantId === 'string' ? parseInt(plantId, 10) : plantId;
+
+  const plant = await prisma.plant.findUnique({
+    where: { id },
+    include: includeClause,
   });
+
+  console.log('Found plant:', plant?.name, 'devices count:', plant?.devices?.length);
 
   if (!plant) {
     throw new NotFoundError('Plant not found');
@@ -452,6 +464,12 @@ const updatePlant = async (plantId, updateData, userId, userRole) => {
   const existingPlant = await getPlantById(plantId, userId, userRole);
 
   const { devices, ...plantUpdateData } = updateData;
+
+  console.log('Update Plant - Received data:', {
+    hasDevices: devices !== undefined,
+    devicesCount: devices?.length,
+    devices: devices
+  });
 
   // If plantId is being changed, validate and check for constraints
   if (plantUpdateData.plantId && plantUpdateData.plantId !== existingPlant.plantId) {
@@ -498,7 +516,7 @@ const updatePlant = async (plantId, updateData, userId, userRole) => {
         ...(plantUpdateData.location && { coordinates }),
       },
       include: {
-        owner: {
+        createdBy: {
           select: {
             id: true,
             name: true,

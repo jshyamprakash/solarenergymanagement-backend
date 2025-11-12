@@ -44,7 +44,7 @@ const createUserSchema = {
  */
 const updateUserSchema = {
   params: z.object({
-    id: z.string().uuid('Invalid user ID'),
+    id: z.string().regex(/^\d+$/, 'Invalid user ID').transform(Number),
   }),
   body: z.object({
     email: z.string().email('Invalid email address').optional(),
@@ -71,7 +71,7 @@ const updateUserSchema = {
  */
 const getUserSchema = {
   params: z.object({
-    id: z.string().uuid('Invalid user ID'),
+    id: z.string().regex(/^\d+$/, 'Invalid user ID').transform(Number),
   }),
 };
 
@@ -80,7 +80,7 @@ const getUserSchema = {
  */
 const deleteUserSchema = {
   params: z.object({
-    id: z.string().uuid('Invalid user ID'),
+    id: z.string().regex(/^\d+$/, 'Invalid user ID').transform(Number),
   }),
 };
 
@@ -107,7 +107,7 @@ const listUsersSchema = {
  */
 const updateUserRoleSchema = {
   params: z.object({
-    id: z.string().uuid('Invalid user ID'),
+    id: z.string().regex(/^\d+$/, 'Invalid user ID').transform(Number),
   }),
   body: z.object({
     role: userRoleSchema,
@@ -119,11 +119,14 @@ const updateUserRoleSchema = {
  */
 const assignPlantsSchema = {
   params: z.object({
-    id: z.string().uuid('Invalid user ID'),
+    id: z.string().regex(/^\d+$/, 'Invalid user ID').transform(Number),
   }),
   body: z.object({
     plantIds: z
-      .array(z.string().uuid('Invalid plant ID'))
+      .array(z.union([
+        z.string().regex(/^\d+$/, 'Invalid plant ID').transform(Number),
+        z.number()
+      ]))
       .min(1, 'At least one plant ID is required'),
   }),
 };
@@ -133,7 +136,7 @@ const assignPlantsSchema = {
  */
 const getUserPlantsSchema = {
   params: z.object({
-    id: z.string().uuid('Invalid user ID'),
+    id: z.string().regex(/^\d+$/, 'Invalid user ID').transform(Number),
   }),
   query: z.object({
     page: z.string().regex(/^\d+$/).transform(Number).optional().default('1'),

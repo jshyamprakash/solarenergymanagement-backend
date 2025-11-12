@@ -18,12 +18,18 @@ const locationSchema = z.object({
  * Device schema for plant creation/update
  */
 const deviceSchema = z.object({
-  templateId: z.string().uuid('Invalid template ID'),
+  templateId: z.union([
+    z.string().regex(/^\d+$/, 'Invalid template ID').transform(Number),
+    z.number()
+  ]),
   name: z.string().min(1, 'Device name is required'),
   parentDeviceId: z.union([z.string(), z.number(), z.null()]).optional(), // Can be 'PLANT', device index (string or number), or null
   serialNumber: z.string().optional(),
   status: z.enum(['ONLINE', 'OFFLINE', 'ERROR', 'MAINTENANCE']).optional(),
-  selectedTags: z.array(z.string().uuid()).optional(),
+  selectedTags: z.array(z.union([
+    z.string().regex(/^\d+$/, 'Invalid tag ID').transform(Number),
+    z.number()
+  ])).optional(),
 });
 
 /**
@@ -66,7 +72,7 @@ const createPlantSchema = {
  */
 const updatePlantSchema = {
   params: z.object({
-    id: z.string().uuid('Invalid plant ID'),
+    id: z.string().regex(/^\d+$/, 'Invalid plant ID').transform(Number),
   }),
   body: z.object({
     name: z
@@ -89,8 +95,11 @@ const updatePlantSchema = {
  */
 const getPlantSchema = {
   params: z.object({
-    id: z.string().uuid('Invalid plant ID'),
+    id: z.string().regex(/^\d+$/, 'Invalid plant ID').transform(Number),
   }),
+  query: z.object({
+    includeDevices: z.string().regex(/^(true|false)$/).transform(val => val === 'true').optional(),
+  }).optional(),
 };
 
 /**
@@ -98,7 +107,7 @@ const getPlantSchema = {
  */
 const deletePlantSchema = {
   params: z.object({
-    id: z.string().uuid('Invalid plant ID'),
+    id: z.string().regex(/^\d+$/, 'Invalid plant ID').transform(Number),
   }),
 };
 
@@ -120,7 +129,7 @@ const listPlantsSchema = {
  */
 const getPlantStatsSchema = {
   params: z.object({
-    id: z.string().uuid('Invalid plant ID'),
+    id: z.string().regex(/^\d+$/, 'Invalid plant ID').transform(Number),
   }),
 };
 

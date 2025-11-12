@@ -93,7 +93,7 @@ const getAllTemplates = async (filters = {}) => {
  */
 const getTemplateById = async (templateId) => {
   const template = await prisma.deviceTemplate.findUnique({
-    where: { id: templateId },
+    where: { id: parseInt(templateId) },
     include: {
       tags: {
         orderBy: {
@@ -268,7 +268,7 @@ const updateTemplate = async (templateId, updateData, userId, userRole) => {
 
   // Update template
   const template = await prisma.deviceTemplate.update({
-    where: { id: templateId },
+    where: { id: parseInt(templateId) },
     data: {
       ...templateFields,
       shortform: templateFields.shortform ? templateFields.shortform.toUpperCase() : undefined,
@@ -330,7 +330,7 @@ const deleteTemplate = async (templateId, userId, userRole) => {
 
   // Delete template (tags will be cascade deleted)
   await prisma.deviceTemplate.delete({
-    where: { id: templateId },
+    where: { id: parseInt(templateId) },
   });
 
   // Log audit entry

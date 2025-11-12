@@ -35,6 +35,7 @@ const validate = (schema) => {
           message: err.message,
         }));
 
+        console.error('Validation Error Details:', JSON.stringify(errors, null, 2));
         next(new ValidationError('Validation failed', errors));
       } else {
         next(error);

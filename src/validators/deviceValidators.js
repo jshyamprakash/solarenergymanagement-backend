@@ -10,7 +10,10 @@ import { z } from 'zod';
  */
 const createDeviceSchema = {
   body: z.object({
-    plantId: z.string().uuid('Invalid plant ID'),
+    plantId: z.union([
+      z.string().regex(/^\d+$/, 'Invalid plant ID').transform(Number),
+      z.number()
+    ]),
     name: z
       .string({
         required_error: 'Device name is required',
@@ -32,7 +35,11 @@ const createDeviceSchema = {
     serialNumber: z.string().optional(),
     status: z.enum(['ONLINE', 'OFFLINE', 'ERROR', 'MAINTENANCE']).optional(),
     installationDate: z.string().datetime().optional(),
-    parentDeviceId: z.string().uuid().optional().nullable(),
+    parentDeviceId: z.union([
+      z.string().regex(/^\d+$/, 'Invalid parent device ID').transform(Number),
+      z.number(),
+      z.null()
+    ]).optional().nullable(),
     metadata: z.record(z.any()).optional(),
   }),
 };
@@ -42,7 +49,7 @@ const createDeviceSchema = {
  */
 const updateDeviceSchema = {
   params: z.object({
-    id: z.string().uuid('Invalid device ID'),
+    id: z.string().regex(/^\d+$/, 'Invalid device ID').transform(Number),
   }),
   body: z.object({
     name: z
@@ -67,7 +74,11 @@ const updateDeviceSchema = {
     serialNumber: z.string().optional(),
     status: z.enum(['ONLINE', 'OFFLINE', 'ERROR', 'MAINTENANCE']).optional(),
     installationDate: z.string().datetime().optional(),
-    parentDeviceId: z.string().uuid().optional().nullable(),
+    parentDeviceId: z.union([
+      z.string().regex(/^\d+$/, 'Invalid parent device ID').transform(Number),
+      z.number(),
+      z.null()
+    ]).optional().nullable(),
     metadata: z.record(z.any()).optional(),
   }),
 };
@@ -77,7 +88,7 @@ const updateDeviceSchema = {
  */
 const getDeviceSchema = {
   params: z.object({
-    id: z.string().uuid('Invalid device ID'),
+    id: z.string().regex(/^\d+$/, 'Invalid device ID').transform(Number),
   }),
 };
 
@@ -86,7 +97,7 @@ const getDeviceSchema = {
  */
 const deleteDeviceSchema = {
   params: z.object({
-    id: z.string().uuid('Invalid device ID'),
+    id: z.string().regex(/^\d+$/, 'Invalid device ID').transform(Number),
   }),
 };
 
@@ -95,7 +106,7 @@ const deleteDeviceSchema = {
  */
 const listDevicesSchema = {
   query: z.object({
-    plantId: z.string().uuid('Invalid plant ID').optional(),
+    plantId: z.string().regex(/^\d+$/, 'Invalid plant ID').transform(Number).optional(),
     deviceType: z
       .enum([
         'INVERTER',
@@ -121,7 +132,7 @@ const listDevicesSchema = {
  */
 const getDeviceHierarchySchema = {
   params: z.object({
-    plantId: z.string().uuid('Invalid plant ID'),
+    plantId: z.string().regex(/^\d+$/, 'Invalid plant ID').transform(Number),
   }),
 };
 
@@ -130,7 +141,7 @@ const getDeviceHierarchySchema = {
  */
 const getDeviceChildrenSchema = {
   params: z.object({
-    id: z.string().uuid('Invalid device ID'),
+    id: z.string().regex(/^\d+$/, 'Invalid device ID').transform(Number),
   }),
 };
 
@@ -139,12 +150,25 @@ const getDeviceChildrenSchema = {
  */
 const createDeviceFromTemplateSchema = {
   body: z.object({
-    plantId: z.string().uuid('Invalid plant ID'),
-    templateId: z.string().uuid('Invalid template ID'),
+    plantId: z.union([
+      z.string().regex(/^\d+$/, 'Invalid plant ID').transform(Number),
+      z.number()
+    ]),
+    templateId: z.union([
+      z.string().regex(/^\d+$/, 'Invalid template ID').transform(Number),
+      z.number()
+    ]),
     name: z.string().min(2).max(100).optional(),
     deviceCode: z.string().optional(),
-    parentDeviceId: z.string().uuid().optional().nullable(),
-    selectedTags: z.array(z.string().uuid()).optional(),
+    parentDeviceId: z.union([
+      z.string().regex(/^\d+$/, 'Invalid parent device ID').transform(Number),
+      z.number(),
+      z.null()
+    ]).optional().nullable(),
+    selectedTags: z.array(z.union([
+      z.string().regex(/^\d+$/, 'Invalid tag ID').transform(Number),
+      z.number()
+    ])).optional(),
     manufacturer: z.string().optional(),
     model: z.string().optional(),
     description: z.string().optional(),
