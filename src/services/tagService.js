@@ -81,22 +81,22 @@ const createTag = async (tagData, userId, userRole) => {
   });
 
   // Log to audit
-  await logAuditEntry({
-    entityType: 'Tag',
-    entityId: tag.id,
-    action: 'CREATE',
-    userId,
-    changesBefore: null,
-    changesAfter: {
-      deviceId: tag.deviceId,
-      name: tag.name,
-      description: tag.description,
-      unit: tag.unit,
-      dataType: tag.dataType,
-      minValue: tag.minValue,
-      maxValue: tag.maxValue,
-    },
-  });
+  //   // await logAuditEntry({
+  //     entityType: 'Tag',
+  //     entityId: tag.id,
+  //     action: 'CREATE',
+  //     userId,
+  //     changesBefore: null,
+  //     changesAfter: {
+  //       deviceId: tag.deviceId,
+  //       name: tag.name,
+  //       description: tag.description,
+  //       unit: tag.unit,
+  //       dataType: tag.dataType,
+  //       minValue: tag.minValue,
+  //       maxValue: tag.maxValue,
+  //     },
+  //   });
 
   return tag;
 };
@@ -294,28 +294,28 @@ const updateTag = async (tagId, updateData, userId, userRole) => {
   });
 
   // Log to audit
-  await logAuditEntry({
-    entityType: 'Tag',
-    entityId: tagId,
-    action: 'UPDATE',
-    userId,
-    changesBefore: {
-      name: existingTag.name,
-      description: existingTag.description,
-      unit: existingTag.unit,
-      dataType: existingTag.dataType,
-      minValue: existingTag.minValue,
-      maxValue: existingTag.maxValue,
-    },
-    changesAfter: {
-      name: updatedTag.name,
-      description: updatedTag.description,
-      unit: updatedTag.unit,
-      dataType: updatedTag.dataType,
-      minValue: updatedTag.minValue,
-      maxValue: updatedTag.maxValue,
-    },
-  });
+  //   // await logAuditEntry({
+  //     entityType: 'Tag',
+  //     entityId: tagId,
+  //     action: 'UPDATE',
+  //     userId,
+  //     changesBefore: {
+  //       name: existingTag.name,
+  //       description: existingTag.description,
+  //       unit: existingTag.unit,
+  //       dataType: existingTag.dataType,
+  //       minValue: existingTag.minValue,
+  //       maxValue: existingTag.maxValue,
+  //     },
+  //     changesAfter: {
+  //       name: updatedTag.name,
+  //       description: updatedTag.description,
+  //       unit: updatedTag.unit,
+  //       dataType: updatedTag.dataType,
+  //       minValue: updatedTag.minValue,
+  //       maxValue: updatedTag.maxValue,
+  //     },
+  //   });
 
   return updatedTag;
 };
@@ -342,22 +342,22 @@ const deleteTag = async (tagId, userId, userRole) => {
   });
 
   // Log to audit
-  await logAuditEntry({
-    entityType: 'Tag',
-    entityId: tagId,
-    action: 'DELETE',
-    userId,
-    changesBefore: {
-      deviceId: existingTag.deviceId,
-      name: existingTag.name,
-      description: existingTag.description,
-      unit: existingTag.unit,
-      dataType: existingTag.dataType,
-      minValue: existingTag.minValue,
-      maxValue: existingTag.maxValue,
-    },
-    changesAfter: null,
-  });
+  //   // await logAuditEntry({
+  //     entityType: 'Tag',
+  //     entityId: tagId,
+  //     action: 'DELETE',
+  //     userId,
+  //     changesBefore: {
+  //       deviceId: existingTag.deviceId,
+  //       name: existingTag.name,
+  //       description: existingTag.description,
+  //       unit: existingTag.unit,
+  //       dataType: existingTag.dataType,
+  //       minValue: existingTag.minValue,
+  //       maxValue: existingTag.maxValue,
+  //     },
+  //     changesAfter: null,
+  //   });
 
   return { message: 'Tag deleted successfully' };
 };

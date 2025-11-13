@@ -34,10 +34,12 @@ const dateStringSchema = z
 export const plantPerformanceReportSchema = {
   body: z.object({
     plantId: z
-      .string({
+      .number({
         required_error: 'Plant ID is required',
+        invalid_type_error: 'Plant ID must be a number',
       })
-      .uuid('Invalid plant ID format'),
+      .int('Plant ID must be an integer')
+      .positive('Plant ID must be positive'),
     startDate: dateStringSchema,
     endDate: dateStringSchema,
     format: reportFormatSchema.default('json'),
@@ -57,10 +59,12 @@ export const plantPerformanceReportSchema = {
 export const devicePerformanceReportSchema = {
   body: z.object({
     deviceId: z
-      .string({
+      .number({
         required_error: 'Device ID is required',
+        invalid_type_error: 'Device ID must be a number',
       })
-      .uuid('Invalid device ID format'),
+      .int('Device ID must be an integer')
+      .positive('Device ID must be positive'),
     startDate: dateStringSchema,
     endDate: dateStringSchema,
     format: reportFormatSchema.default('json'),
@@ -79,8 +83,8 @@ export const devicePerformanceReportSchema = {
  */
 export const alarmReportSchema = {
   body: z.object({
-    plantId: z.string().uuid('Invalid plant ID format').optional(),
-    deviceId: z.string().uuid('Invalid device ID format').optional(),
+    plantId: z.number().int('Plant ID must be an integer').positive('Plant ID must be positive').optional(),
+    deviceId: z.number().int('Device ID must be an integer').positive('Device ID must be positive').optional(),
     severity: alarmSeveritySchema.optional(),
     status: alarmStatusSchema.optional(),
     startDate: dateStringSchema,
@@ -101,8 +105,8 @@ export const alarmReportSchema = {
  */
 export const energyProductionReportSchema = {
   body: z.object({
-    plantId: z.string().uuid('Invalid plant ID format').optional(),
-    deviceId: z.string().uuid('Invalid device ID format').optional(),
+    plantId: z.number().int('Plant ID must be an integer').positive('Plant ID must be positive').optional(),
+    deviceId: z.number().int('Device ID must be an integer').positive('Device ID must be positive').optional(),
     startDate: dateStringSchema,
     endDate: dateStringSchema,
     format: reportFormatSchema.default('json'),

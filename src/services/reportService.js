@@ -81,7 +81,7 @@ const getPlantPerformanceData = async ({ plantId, startDate, endDate, userId, us
   const plant = await prisma.plant.findUnique({
     where: { id: plantId },
     include: {
-      owner: {
+      createdBy: {
         select: { id: true, name: true, email: true },
       },
       devices: {
@@ -180,21 +180,21 @@ const getPlantPerformanceData = async ({ plantId, startDate, endDate, userId, us
   });
 
   // Get daily energy generation for chart
-  const dailyEnergy = await prisma.$queryRaw`
+  const dailyEnergy = await prisma.$queryRawUnsafe(`
     SELECT
       DATE(timestamp) as date,
       SUM(CAST(value AS DECIMAL)) as total_energy
-    FROM "solar2"."ProcessedData"
+    FROM processed_data
     WHERE "plantId" = ${plantId}
-      AND timestamp >= ${new Date(startDate)}
-      AND timestamp <= ${new Date(endDate)}
+      AND timestamp >= '${startDate}'
+      AND timestamp <= '${endDate}'
       AND "tagId" IN (
-        SELECT id FROM "solar2"."Tags"
+        SELECT id FROM tags
         WHERE name IN ('Energy', 'TotalEnergy')
       )
     GROUP BY DATE(timestamp)
     ORDER BY date ASC
-  `;
+  `);
 
   return {
     plant: {
@@ -204,7 +204,7 @@ const getPlantPerformanceData = async ({ plantId, startDate, endDate, userId, us
       capacity: plant.capacity,
       status: plant.status,
       installationDate: plant.installationDate,
-      owner: plant.owner,
+      owner: plant.createdBy,
     },
     reportPeriod: {
       startDate: formatDate(startDate),
@@ -412,16 +412,20 @@ const getDevicePerformanceData = async ({ deviceId, startDate, endDate, userId, 
   // Validate device exists and user has access
   const device = await prisma.device.findUnique({
     where: { id: deviceId },
-    include: {
-      plant: {
-        include: {
-          owner: { select: { id: true, name: true } },
-        },
-      },
+    select: {
+      id: true,
+      name: true,
       deviceType: true,
-      deviceTags: {
-        include: {
-          tag: true,
+      status: true,
+      serialNumber: true,
+      plant: {
+        select: { id: true, name: true },
+      },
+      tags: {
+        select: {
+          id: true,
+          name: true,
+          unit: true,
         },
       },
     },
@@ -1074,24 +1078,24 @@ const getEnergyProductionData = async ({ plantId, deviceId, startDate, endDate, 
   });
 
   // Daily aggregation
-  const dailyData = await prisma.$queryRaw`
+  const dailyData = await prisma.$queryRawUnsafe(`
     SELECT
       DATE(timestamp) as date,
       SUM(CAST(value AS DECIMAL)) as total_energy,
       AVG(CAST(value AS DECIMAL)) as avg_power,
       MAX(CAST(value AS DECIMAL)) as peak_power
-    FROM "solar2"."ProcessedData"
-    WHERE timestamp >= ${new Date(startDate)}
-      AND timestamp <= ${new Date(endDate)}
-      ${plantId ? prisma.$queryRawUnsafe(`AND "plantId" = '${plantId}'`) : prisma.$queryRawUnsafe('')}
-      ${deviceId ? prisma.$queryRawUnsafe(`AND "deviceId" = '${deviceId}'`) : prisma.$queryRawUnsafe('')}
+    FROM processed_data
+    WHERE timestamp >= '${startDate}'
+      AND timestamp <= '${endDate}'
+      ${plantId ? `AND "plantId" = ${plantId}` : ''}
+      ${deviceId ? `AND "deviceId" = ${deviceId}` : ''}
       AND "tagId" IN (
-        SELECT id FROM "solar2"."Tags"
+        SELECT id FROM tags
         WHERE name IN ('Energy', 'TotalEnergy', 'ActivePower', 'Power')
       )
     GROUP BY DATE(timestamp)
     ORDER BY date ASC
-  `;
+  `);
 
   // Calculate statistics
   const energyValues = productionData.map(d => parseFloat(d.value));

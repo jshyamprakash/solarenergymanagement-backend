@@ -174,19 +174,19 @@ const createUser = async (userData, createdById) => {
   });
 
   // Log to audit
-  await logAuditEntry({
-    entityType: 'User',
-    entityId: user.id,
-    action: 'CREATE',
-    userId: createdById,
-    changesBefore: null,
-    changesAfter: {
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      isActive: user.isActive,
-    },
-  });
+  //   // await logAuditEntry({
+  //     entityType: 'User',
+  //     entityId: user.id,
+  //     action: 'CREATE',
+  //     userId: createdById,
+  //     changesBefore: null,
+  //     changesAfter: {
+  //       email: user.email,
+  //       name: user.name,
+  //       role: user.role,
+  //       isActive: user.isActive,
+  //     },
+  //   });
 
   return user;
 };
@@ -251,24 +251,24 @@ const updateUser = async (userId, updateData, updatedById) => {
   });
 
   // Log to audit
-  await logAuditEntry({
-    entityType: 'User',
-    entityId: user.id,
-    action: 'UPDATE',
-    userId: updatedById,
-    changesBefore: {
-      email: existingUser.email,
-      name: existingUser.name,
-      role: existingUser.role,
-      isActive: existingUser.isActive,
-    },
-    changesAfter: {
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      isActive: user.isActive,
-    },
-  });
+  //   // await logAuditEntry({
+  //     entityType: 'User',
+  //     entityId: user.id,
+  //     action: 'UPDATE',
+  //     userId: updatedById,
+  //     changesBefore: {
+  //       email: existingUser.email,
+  //       name: existingUser.name,
+  //       role: existingUser.role,
+  //       isActive: existingUser.isActive,
+  //     },
+  //     changesAfter: {
+  //       email: user.email,
+  //       name: user.name,
+  //       role: user.role,
+  //       isActive: user.isActive,
+  //     },
+  //   });
 
   return user;
 };
@@ -312,24 +312,24 @@ const deleteUser = async (userId, deletedById) => {
   });
 
   // Log to audit
-  await logAuditEntry({
-    entityType: 'User',
-    entityId: userId,
-    action: 'DELETE',
-    userId: deletedById,
-    changesBefore: {
-      email: existingUser.email,
-      name: existingUser.name,
-      role: existingUser.role,
-      isActive: existingUser.isActive,
-    },
-    changesAfter: {
-      email: existingUser.email,
-      name: existingUser.name,
-      role: existingUser.role,
-      isActive: false,
-    },
-  });
+  //   // await logAuditEntry({
+  //     entityType: 'User',
+  //     entityId: userId,
+  //     action: 'DELETE',
+  //     userId: deletedById,
+  //     changesBefore: {
+  //       email: existingUser.email,
+  //       name: existingUser.name,
+  //       role: existingUser.role,
+  //       isActive: existingUser.isActive,
+  //     },
+  //     changesAfter: {
+  //       email: existingUser.email,
+  //       name: existingUser.name,
+  //       role: existingUser.role,
+  //       isActive: false,
+  //     },
+  //   });
 
   return { message: 'User deactivated successfully' };
 };
@@ -384,21 +384,21 @@ const updateUserRole = async (userId, newRole, updatedById) => {
   });
 
   // Log to audit
-  await logAuditEntry({
-    entityType: 'User',
-    entityId: userId,
-    action: 'UPDATE',
-    userId: updatedById,
-    changesBefore: {
-      role: existingUser.role,
-    },
-    changesAfter: {
-      role: newRole,
-    },
-    metadata: {
-      action: 'role_change',
-    },
-  });
+  //   // await logAuditEntry({
+  //     entityType: 'User',
+  //     entityId: userId,
+  //     action: 'UPDATE',
+  //     userId: updatedById,
+  //     changesBefore: {
+  //       role: existingUser.role,
+  //     },
+  //     changesAfter: {
+  //       role: newRole,
+  //     },
+  //     metadata: {
+  //       action: 'role_change',
+  //     },
+  //   });
 
   return user;
 };

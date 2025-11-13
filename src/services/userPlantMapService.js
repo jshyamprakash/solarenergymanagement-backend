@@ -181,10 +181,147 @@ const bulkAssign = async (assignments) => {
   };
 };
 
+/**
+ * Check if user has access to a specific plant
+ */
+const checkUserPlantAccess = async (userId, plantId) => {
+  try {
+    // Admin users have access to all plants
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true }
+    });
+
+    if (!user) {
+      return false;
+    }
+
+    if (user.role === 'ADMIN') {
+      return true;
+    }
+
+    // Check if user is assigned to the plant
+    const assignment = await prisma.userPlantMap.findUnique({
+      where: {
+        userId_plantId: {
+          userId,
+          plantId
+        }
+      }
+    });
+
+    return !!assignment;
+  } catch (error) {
+    console.error('Error checking user plant access:', error);
+    return false;
+  }
+};
+
+/**
+ * Get all accessible plants for a user (admin gets all)
+ */
+const getAccessiblePlants = async (userId) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true }
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    let plants;
+
+    if (user.role === 'ADMIN') {
+      // Admin gets all plants
+      plants = await prisma.plant.findMany({
+        include: {
+          _count: {
+            select: {
+              devices: true,
+              userMaps: true
+            }
+          }
+        },
+        orderBy: {
+          name: 'asc'
+        }
+      });
+    } else {
+      // Non-admin users get only assigned plants
+      const userPlants = await prisma.userPlantMap.findMany({
+        where: { userId },
+        include: {
+          plant: {
+            include: {
+              _count: {
+                select: {
+                  devices: true,
+                  userMaps: true
+                }
+              }
+            }
+          }
+        }
+      });
+
+      plants = userPlants.map(up => up.plant);
+    }
+
+    return plants;
+  } catch (error) {
+    console.error('Error fetching accessible plants:', error);
+    throw new Error('Failed to fetch accessible plants');
+  }
+};
+
+/**
+ * Get users not assigned to a specific plant
+ */
+const getUnassignedUsers = async (plantId) => {
+  try {
+    // Get all users
+    const allUsers = await prisma.user.findMany({
+      where: {
+        isActive: true
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true
+      },
+      orderBy: {
+        name: 'asc'
+      }
+    });
+
+    // Get users already assigned to the plant
+    const assignedUserIds = await prisma.userPlantMap.findMany({
+      where: { plantId },
+      select: { userId: true }
+    });
+
+    const assignedIds = assignedUserIds.map(au => au.userId);
+
+    // Filter out assigned users
+    const unassignedUsers = allUsers.filter(user => !assignedIds.includes(user.id));
+
+    return unassignedUsers;
+  } catch (error) {
+    console.error('Error fetching unassigned users:', error);
+    throw new Error('Failed to fetch unassigned users');
+  }
+};
+
 export {
   assignPlantsToUser,
   removePlantsFromUser,
   getUsersForPlant,
   getPlantsForUser,
   bulkAssign,
+  checkUserPlantAccess,
+  getAccessiblePlants,
+  getUnassignedUsers,
 };

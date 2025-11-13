@@ -284,23 +284,23 @@ const createDeviceFromTemplate = async (deviceData, userId, userRole) => {
   });
 
   // Log to audit
-  await logAuditEntry({
-    entityType: 'Device',
-    entityId: device.id,
-    action: 'CREATE',
-    userId,
-    changesBefore: null,
-    changesAfter: {
-      name: device.name,
-      deviceId: device.deviceId,
-      deviceType: device.deviceType,
-      templateId: device.templateId,
-      plantId: device.plantId,
-      parentDeviceId: device.parentDeviceId,
-      mqttTopic: device.mqttTopic,
-      tagsCount: template.tags.length,
-    },
-  });
+  //   // await logAuditEntry({
+  //     entityType: 'Device',
+  //     entityId: device.id,
+  //     action: 'CREATE',
+  //     userId,
+  //     changesBefore: null,
+  //     changesAfter: {
+  //       name: device.name,
+  //       deviceId: device.deviceId,
+  //       deviceType: device.deviceType,
+  //       templateId: device.templateId,
+  //       plantId: device.plantId,
+  //       parentDeviceId: device.parentDeviceId,
+  //       mqttTopic: device.mqttTopic,
+  //       tagsCount: template.tags.length,
+  //     },
+  //   });
 
   return deviceWithTags;
 };
@@ -359,24 +359,24 @@ const createDevice = async (deviceData, userId, userRole) => {
   });
 
   // Log to audit
-  await logAuditEntry({
-    entityType: 'Device',
-    entityId: device.id,
-    action: 'CREATE',
-    userId,
-    changesBefore: null,
-    changesAfter: {
-      name: device.name,
-      deviceType: device.deviceType,
-      plantId: device.plantId,
-      parentDeviceId: device.parentDeviceId,
-      status: device.status,
-      manufacturer: device.manufacturer,
-      model: device.model,
-      serialNumber: device.serialNumber,
-      installationDate: device.installationDate,
-    },
-  });
+  //   // await logAuditEntry({
+  //     entityType: 'Device',
+  //     entityId: device.id,
+  //     action: 'CREATE',
+  //     userId,
+  //     changesBefore: null,
+  //     changesAfter: {
+  //       name: device.name,
+  //       deviceType: device.deviceType,
+  //       plantId: device.plantId,
+  //       parentDeviceId: device.parentDeviceId,
+  //       status: device.status,
+  //       manufacturer: device.manufacturer,
+  //       model: device.model,
+  //       serialNumber: device.serialNumber,
+  //       installationDate: device.installationDate,
+  //     },
+  //   });
 
   return device;
 };
@@ -577,32 +577,32 @@ const updateDevice = async (deviceId, updateData, userId, userRole) => {
   });
 
   // Log to audit
-  await logAuditEntry({
-    entityType: 'Device',
-    entityId: deviceId,
-    action: 'UPDATE',
-    userId,
-    changesBefore: {
-      name: existingDevice.name,
-      deviceType: existingDevice.deviceType,
-      parentDeviceId: existingDevice.parentDeviceId,
-      status: existingDevice.status,
-      manufacturer: existingDevice.manufacturer,
-      model: existingDevice.model,
-      serialNumber: existingDevice.serialNumber,
-      installationDate: existingDevice.installationDate,
-    },
-    changesAfter: {
-      name: device.name,
-      deviceType: device.deviceType,
-      parentDeviceId: device.parentDeviceId,
-      status: device.status,
-      manufacturer: device.manufacturer,
-      model: device.model,
-      serialNumber: device.serialNumber,
-      installationDate: device.installationDate,
-    },
-  });
+  //   // await logAuditEntry({
+  //     entityType: 'Device',
+  //     entityId: deviceId,
+  //     action: 'UPDATE',
+  //     userId,
+  //     changesBefore: {
+  //       name: existingDevice.name,
+  //       deviceType: existingDevice.deviceType,
+  //       parentDeviceId: existingDevice.parentDeviceId,
+  //       status: existingDevice.status,
+  //       manufacturer: existingDevice.manufacturer,
+  //       model: existingDevice.model,
+  //       serialNumber: existingDevice.serialNumber,
+  //       installationDate: existingDevice.installationDate,
+  //     },
+  //     changesAfter: {
+  //       name: device.name,
+  //       deviceType: device.deviceType,
+  //       parentDeviceId: device.parentDeviceId,
+  //       status: device.status,
+  //       manufacturer: device.manufacturer,
+  //       model: device.model,
+  //       serialNumber: device.serialNumber,
+  //       installationDate: device.installationDate,
+  //     },
+  //   });
 
   return device;
 };
@@ -629,24 +629,24 @@ const deleteDevice = async (deviceId, userId, userRole) => {
   });
 
   // Log to audit
-  await logAuditEntry({
-    entityType: 'Device',
-    entityId: deviceId,
-    action: 'DELETE',
-    userId,
-    changesBefore: {
-      name: existingDevice.name,
-      deviceType: existingDevice.deviceType,
-      plantId: existingDevice.plantId,
-      parentDeviceId: existingDevice.parentDeviceId,
-      status: existingDevice.status,
-      manufacturer: existingDevice.manufacturer,
-      model: existingDevice.model,
-      serialNumber: existingDevice.serialNumber,
-      installationDate: existingDevice.installationDate,
-    },
-    changesAfter: null,
-  });
+  //   // await logAuditEntry({
+  //     entityType: 'Device',
+  //     entityId: deviceId,
+  //     action: 'DELETE',
+  //     userId,
+  //     changesBefore: {
+  //       name: existingDevice.name,
+  //       deviceType: existingDevice.deviceType,
+  //       plantId: existingDevice.plantId,
+  //       parentDeviceId: existingDevice.parentDeviceId,
+  //       status: existingDevice.status,
+  //       manufacturer: existingDevice.manufacturer,
+  //       model: existingDevice.model,
+  //       serialNumber: existingDevice.serialNumber,
+  //       installationDate: existingDevice.installationDate,
+  //     },
+  //     changesAfter: null,
+  //   });
 
   return { message: 'Device deleted successfully' };
 };

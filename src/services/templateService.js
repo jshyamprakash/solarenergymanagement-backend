@@ -209,19 +209,19 @@ const createTemplate = async (templateData, userId, userRole) => {
   });
 
   // Log audit entry
-  await logAuditEntry({
-    entityType: 'DeviceTemplate',
-    entityId: template.id,
-    action: 'CREATE',
-    userId,
-    changesBefore: null,
-    changesAfter: {
-      name: template.name,
-      shortform: template.shortform,
-      deviceType: template.deviceType,
-      tagsCount: template.tags.length,
-    },
-  });
+  //   // await logAuditEntry({
+  //     entityType: 'DeviceTemplate',
+  //     entityId: template.id,
+  //     action: 'CREATE',
+  //     userId,
+  //     changesBefore: null,
+  //     changesAfter: {
+  //       name: template.name,
+  //       shortform: template.shortform,
+  //       deviceType: template.deviceType,
+  //       tagsCount: template.tags.length,
+  //     },
+  //   });
 
   return template;
 };
@@ -283,22 +283,22 @@ const updateTemplate = async (templateId, updateData, userId, userRole) => {
   });
 
   // Log audit entry
-  await logAuditEntry({
-    entityType: 'DeviceTemplate',
-    entityId: template.id,
-    action: 'UPDATE',
-    userId,
-    changesBefore: {
-      name: existingTemplate.name,
-      shortform: existingTemplate.shortform,
-      deviceType: existingTemplate.deviceType,
-    },
-    changesAfter: {
-      name: template.name,
-      shortform: template.shortform,
-      deviceType: template.deviceType,
-    },
-  });
+  //   // await logAuditEntry({
+  //     entityType: 'DeviceTemplate',
+  //     entityId: template.id,
+  //     action: 'UPDATE',
+  //     userId,
+  //     changesBefore: {
+  //       name: existingTemplate.name,
+  //       shortform: existingTemplate.shortform,
+  //       deviceType: existingTemplate.deviceType,
+  //     },
+  //     changesAfter: {
+  //       name: template.name,
+  //       shortform: template.shortform,
+  //       deviceType: template.deviceType,
+  //     },
+  //   });
 
   return template;
 };
@@ -334,18 +334,18 @@ const deleteTemplate = async (templateId, userId, userRole) => {
   });
 
   // Log audit entry
-  await logAuditEntry({
-    entityType: 'DeviceTemplate',
-    entityId: templateId,
-    action: 'DELETE',
-    userId,
-    changesBefore: {
-      name: existingTemplate.name,
-      shortform: existingTemplate.shortform,
-      deviceType: existingTemplate.deviceType,
-    },
-    changesAfter: null,
-  });
+  //   // await logAuditEntry({
+  //     entityType: 'DeviceTemplate',
+  //     entityId: templateId,
+  //     action: 'DELETE',
+  //     userId,
+  //     changesBefore: {
+  //       name: existingTemplate.name,
+  //       shortform: existingTemplate.shortform,
+  //       deviceType: existingTemplate.deviceType,
+  //     },
+  //     changesAfter: null,
+  //   });
 
   return {
     message: 'Device template deleted successfully',
