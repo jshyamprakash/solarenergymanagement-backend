@@ -33,6 +33,10 @@ const validatePlantId = (plantId) => {
  * Create a new plant
  */
 const createPlant = async (plantData, userId) => {
+  console.log('=== PLANT SERVICE CREATE DEBUG ===');
+  console.log('Received plantData:', plantData);
+  console.log('Received userId:', userId);
+  console.log('Type of userId:', typeof userId);
   const { location, plantId, mqttBaseTopic, devices = [], ...restData } = plantData;
 
   // Validate required fields
